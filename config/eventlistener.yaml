@@ -1,0 +1,89 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+spec:
+  triggers:
+    - name: github-listener
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: github-secret
+                secretKey: secretToken
+            - name: "eventTypes"
+              value: ["check_suite"]
+        - name: "only when a new check suite is requested"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: "body.action in ['requested']"
+      bindings:
+        - ref: github-check-binding
+      template:
+        ref: github-template
+  resources:
+    kubernetesResource:
+      serviceType: LoadBalancer
+      spec:
+        template:
+          spec:
+            serviceAccountName: dogfood-sa
+  #           containers:
+  #             - resources:
+  #                 requests:
+  #                   memory: "64Mi"
+  #                   cpu: "250m"
+  #                 limits:
+  #                   memory: "128Mi"
+  #                   cpu: "500m"
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: github-check-binding
+spec:
+  params:
+    - name: revision
+      value: $(body.check_suite.head_sha)
+    - name: repo-full-name
+      value: $(body.repository.full_name)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-template
+spec:
+  params:
+    - name: repo-full-name
+    - name: revision
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: github-run-
+      spec:
+        pipelineRef:
+          name: ci-pipeline
+        serviceAccountName: container-registry-sa
+        params:
+        - name: repo-full-name
+          value: $(tt.params.repo-full-name)
+        - name: revision
+          value: $(tt.params.revision)
+        workspaces:
+        - name: github-app-private-key
+          secret:
+            secretName: github-app-key
+        - name: source
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+          

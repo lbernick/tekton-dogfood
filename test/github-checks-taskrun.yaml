@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  name: update-check-run-taskrun
+spec:
+  taskRef:
+    name: update-github-check-run
+  serviceAccountName: container-registry-sa
+  workspaces:
+  - name: github-app-private-key
+    secret:
+      secretName: github-app-key
+  params:
+  - name: repo-name
+    value: pipeline
+  - name: repo-owner-name
+    value: lbernick
+  - name: git-sha
+    value: acf9112d326e5c3af66ece0a3e43f54ba48e2d77
+  - name: conclusion
+    value: Succeeded
+  - name: status
+    value: completed
+  - name: check-run-name
+    value: ci

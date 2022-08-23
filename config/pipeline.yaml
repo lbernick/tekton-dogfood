@@ -1,0 +1,80 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: unit-tests
+spec:
+  workspaces:
+  - name: source
+  steps:
+  - image: busybox
+    script: ls $(workspaces.source.path)
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ci-pipeline
+spec:
+  workspaces:
+  - name: source
+  - name: github-app-private-key
+  params:
+  - name: repo-full-name
+  - name: revision
+  tasks:
+  - name: create-check-runs
+    taskRef:
+      name: update-github-check-run
+    params:
+    - name: repo-full-name
+      value: $(params.repo-full-name)
+    - name: git-sha
+      value: $(params.revision)
+    - name: status
+      value: "in_progress"
+    - name: check-run-name
+      value: ci
+    - name: externalid
+      value: $(context.pipelineRun.name)
+    workspaces:
+    - name: github-app-private-key
+      workspace: github-app-private-key
+  - name: clone
+    taskRef:
+      name: git-clone
+      bundle: gcr.io/tekton-releases/catalog/upstream/git-clone:0.7
+    workspaces:
+    - name: output
+      workspace: source
+    params:
+    - name: url
+      value: https://github.com/$(params.repo-full-name)
+    - name: revision
+      value: $(params.revision)
+  - name: unit-tests
+    taskRef:
+      name: unit-tests
+    workspaces:
+    - name: source
+      workspace: source
+    runAfter:
+    - clone
+  finally:
+  - name: post-github-status
+    taskRef:
+      name: update-github-check-run
+    params:
+    - name: status
+      value: completed
+    - name: conclusion
+      value: $(tasks.unit-tests.status)
+    - name: repo-full-name
+      value: $(params.repo-full-name)
+    - name: git-sha
+      value: $(params.revision)
+    - name: check-run-name
+      value: ci
+    - name: externalid
+      value: $(context.pipelineRun.name)
+    workspaces:
+    - name: github-app-private-key
+      workspace: github-app-private-key
