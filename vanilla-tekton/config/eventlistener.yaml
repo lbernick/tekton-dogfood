@@ -1,3 +1,10 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: container-registry-sa
+  annotations:
+    iam.gke.io/gcp-service-account: leebernick-container-registry@tekton-interns.iam.gserviceaccount.com
+---
 apiVersion: triggers.tekton.dev/v1beta1
 kind: EventListener
 metadata:
@@ -32,14 +39,6 @@ spec:
         template:
           spec:
             serviceAccountName: dogfood-sa
-  #           containers:
-  #             - resources:
-  #                 requests:
-  #                   memory: "64Mi"
-  #                   cpu: "250m"
-  #                 limits:
-  #                   memory: "128Mi"
-  #                   cpu: "500m"
 ---
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerBinding
@@ -74,6 +73,10 @@ spec:
           value: $(tt.params.repo-full-name)
         - name: revision
           value: $(tt.params.revision)
+        - name: github-app-id
+          value: "229835"
+        - name: app-installation-id
+          value: "28405964"
         workspaces:
         - name: github-app-private-key
           secret:

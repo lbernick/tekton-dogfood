@@ -20,6 +20,8 @@ spec:
   params:
   - name: repo-full-name
   - name: revision
+  - name: github-app-id
+  - name: app-installation-id
   tasks:
   - name: create-check-runs
     taskRef:
@@ -35,6 +37,10 @@ spec:
       value: ci
     - name: externalid
       value: $(context.pipelineRun.name)
+    - name: github-app-id
+      value: $(params.github-app-id)
+    - name: app-installation-id
+      value: $(params.app-installation-id)
     workspaces:
     - name: github-app-private-key
       workspace: github-app-private-key
@@ -75,6 +81,10 @@ spec:
       value: ci
     - name: externalid
       value: $(context.pipelineRun.name)
+    - name: github-app-id
+      value: $(params.github-app-id)
+    - name: app-installation-id
+      value: $(params.app-installation-id)
     workspaces:
     - name: github-app-private-key
       workspace: github-app-private-key

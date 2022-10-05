@@ -14,6 +14,8 @@ spec:
     description: "Allowed values are 'Succeeded', 'Failed', and 'None'"
     default: None
   - name: check-run-name
+  - name: github-app-id
+  - name: app-installation-id
   workspaces:
   - name: github-app-private-key
   steps:
@@ -24,6 +26,10 @@ spec:
     - $(workspaces.github-app-private-key.path)/private-key.pem
     - -c
     - /github-app-token/token.txt
+    - -a
+    - $(params.github-app-id)
+    - -i
+    - $(params.app-installation-id)
     volumeMounts:
     - mountPath: /github-app-token
       name: token
