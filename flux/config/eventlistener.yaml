@@ -1,0 +1,65 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: flux-listener
+  namespace: dogfood
+spec:
+  triggers:
+    - name: flux-trigger
+      interceptors:
+      - ref:
+          name: "cel"
+        params:
+        - name: "filter"
+          value: header.canonical('Gotk-Component') == 'source-controller' && body.involvedObject.kind == 'GitRepository'
+      bindings:
+        - ref: flux-binding
+      template:
+        ref: flux-template
+  serviceAccountName: dogfood-sa
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: flux-binding
+  namespace: dogfood
+spec:
+  params:
+    - name: revision
+      value: "TODO: How do I get the revision?"
+    - name: repo-full-name
+      value: lbernick/$(body.involvedObject.name)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: flux-template
+  namespace: dogfood
+spec:
+  params:
+    - name: repo-full-name
+    - name: revision
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: github-run-
+      spec:
+        pipelineRef:
+          name: ci-pipeline-with-flux
+        serviceAccountName: container-registry-sa
+        params:
+        - name: repo-full-name
+          value: $(tt.params.repo-full-name)
+        - name: revision
+          value: $(tt.params.revision)
+        workspaces:
+        - name: source
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+          

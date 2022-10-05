@@ -1,0 +1,49 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: GitRepository
+metadata:
+  name: hello-k8s
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  url: https://github.com/lbernick/hello-kubernetes
+  ref:
+    branch: master  # TODO: how to detect changes before they hit the master branch?
+---
+apiVersion: notification.toolkit.fluxcd.io/v1beta1
+kind: Receiver
+metadata:
+  name: webapp
+  namespace: flux-system
+spec:
+  type: github
+  events:
+    - "ping"
+    - "push"
+  secretRef:
+    name: webhook-token
+  resources:
+    - kind: GitRepository
+      name: hello-k8s
+---
+apiVersion: notification.toolkit.fluxcd.io/v1beta1
+kind: Provider
+metadata:
+  name: tekton-el-provider
+  namespace: flux-system  
+spec:
+  type: generic
+  address: http://el-flux-listener.dogfood.svc.cluster.local:8080/
+---
+apiVersion: notification.toolkit.fluxcd.io/v1beta1
+kind: Alert
+metadata:
+  name: tekton-alert
+  namespace: flux-system
+spec:
+  providerRef:
+    name: tekton-el-provider
+  eventSeverity: info
+  eventSources:
+    - kind: GitRepository
+      name: hello-k8s
+      namespace: flux-system
