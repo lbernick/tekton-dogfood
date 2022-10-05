@@ -1,0 +1,60 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Workflow
+metadata:
+  name: ci-workflow
+spec:
+  pipeline:
+    spec:  # I think pipelineRefGit is for a pipeline definition stored in git--
+  repos:
+  - name: pipeline
+    url: https://github.com/lbernick/pipeline
+    defaultBranch: main  # How does this work for PRs?
+  # secrets: # Not sure what to use this for if there are also workspaces?
+  params:  # Sort of confused about what goes here?
+  - name: repo-full-name
+  - name: revision
+  triggers:
+  - name: checkSuiteRequested
+    event:
+      source:
+      - name: pipeline
+        url: https://github.com/lbernick/pipeline
+        defaultBranch: main
+      type: check_suite
+      secret:  # I'm going to assume this is the webhook secret
+        secretKey: secretToken
+        secretName: github-secret
+    bindings:
+    - name: revision
+      value: $(body.check_suite.head_sha)
+    - name: repo-full-name
+      value: $(body.repository.full_name)
+    interceptors:
+    - name: "github check_suite events"
+      ref:
+        name: "github"
+      params:
+      - name: "secretRef"
+        value:
+          secretName: github-secret # wondering if there's a better way than repeating this
+          secretKey: secretToken
+      - name: "eventTypes"
+        value: ["check_suite"]
+    - name: "only when a new check suite is requested"
+      ref:
+        name: "cel"
+      params:
+        - name: "filter"
+          value: "body.action in ['requested']"
+  workspaces:
+  - name: github-app-private-key
+    secret:
+      secretName: github-app-key
+  - name: source
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
