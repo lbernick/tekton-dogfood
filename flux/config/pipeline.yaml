@@ -1,0 +1,44 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: unit-tests
+  namespace: dogfood
+spec:
+  workspaces:
+  - name: source
+  steps:
+  - image: busybox
+    script: ls $(workspaces.source.path)
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ci-pipeline-with-flux
+  namespace: dogfood
+spec:
+  workspaces:
+  - name: source
+  params:
+  - name: repo-full-name
+  - name: revision
+  tasks:
+  - name: clone
+    taskRef:
+      name: git-clone # TODO: do we need this if flux will clone the repo?
+      bundle: gcr.io/tekton-releases/catalog/upstream/git-clone:0.7
+    workspaces:
+    - name: output
+      workspace: source
+    params:
+    - name: url
+      value: https://github.com/$(params.repo-full-name)
+    - name: revision
+      value: $(params.revision)
+  - name: unit-tests
+    taskRef:
+      name: unit-tests
+    workspaces:
+    - name: source
+      workspace: source
+    runAfter:
+    - clone

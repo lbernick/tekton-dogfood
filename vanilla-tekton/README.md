@@ -9,6 +9,7 @@ A CI pipeline that responds to Github Checks "Create Check Suite" requests and p
 - test: Runs for testing the CI pipeline
 
 ## Steps to set up this EventListener and Pipeline
+- Enable OCI bundles and alpha features.
 - Build the JWT image in jwt/ and push it to an image repository
   - Replace the image in the "generate-token" step of config/github-checks-task.yaml with this image
 - Apply config/ contents to cluster
