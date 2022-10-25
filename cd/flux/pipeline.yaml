@@ -1,0 +1,101 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: kaniko-build
+  namespace: dogfood
+spec:
+  workspaces:
+  - name: source-code
+  params:
+  - name: image
+  results:
+  - name: digest
+  steps:
+  - name: check-auth
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk
+    args: ["gcloud", "auth", "list"]
+  - name: build-and-push
+    image: "gcr.io/kaniko-project/executor:v1.5.1"
+    args: [
+      "--dockerfile=$(workspaces.source-code.path)/Dockerfile",
+      "--context=dir://$(workspaces.source-code.path)",
+      "--destination=$(params.image)",
+      "--digest-file=$(results.digest.path)",
+    ]
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: notify-google-chat
+  namespace: dogfood
+spec:
+  params:
+  - name: webhook-url
+  - name: message
+  steps:
+  - name: notify
+    image: curlimages/curl
+    command:
+    - sh
+    args:
+    - -ce
+    - |
+      set -ex
+      BODY="{\"text\":\"$(params.message)\"}"
+      echo "Posting message to Google Chat"
+      curl -i -H "Content-Type: application/json; charset=UTF-8" "$(params.webhook-url)" -d '{"text":"$(params.message)"}'
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: clone-build-push
+  namespace: dogfood
+spec:
+  description: |
+    This pipeline clones a git repo, builds a Docker image with Kaniko and
+    pushes it to Google Artifact repository.
+  workspaces:
+  - name: source-code
+  params:
+  - name: image
+  - name: repo-url
+  - name: chat-webhook-url
+  results:
+  - name: image-digest
+    value: $(tasks.build.results.digest)
+  tasks:
+  - name: fetch-source
+    taskRef:
+      resolver: hub
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: git-clone
+      - name: version
+        value: "0.7"
+    workspaces:
+    - name: output
+      workspace: source-code
+    params:
+    - name: url
+      value: $(params.repo-url)
+  - name: build
+    taskRef:
+      name: kaniko-build
+    params:
+    - name: image
+      value: $(params.image)
+    workspaces:
+    - name: source-code
+    runAfter:
+    - fetch-source
+  finally:
+  - name: notify
+    taskRef:
+      name: notify-google-chat
+    params:
+    - name: webhook-url
+      value: $(params.chat-webhook-url)
+    - name: message
+      value: "Build status: $(tasks.build.status)"

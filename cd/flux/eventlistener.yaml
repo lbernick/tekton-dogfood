@@ -1,0 +1,56 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+  namespace: dogfood
+spec:
+  triggers:
+    - name: github-listener
+      interceptors:
+      - ref:
+          name: "cel"
+        params:
+        - name: "filter"
+          value: header.canonical('Gotk-Component') == 'source-controller' && body.involvedObject.kind == 'GitRepository'
+      template:
+        ref: github-template
+  serviceAccountName: dogfood-sa
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-template
+  namespace: dogfood
+spec:
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: cd-run-
+      spec:
+        pipelineRef:
+          name: clone-build-push
+        params:
+        - name: repo-url
+          value: https://github.com/lbernick/web-app-demo
+        - name: image
+          value: us-east1-docker.pkg.dev/tekton-interns/leebernick/web-app-demo
+        - name: chat-webhook-url
+          value: https://chat.googleapis.com/v1/spaces/AAAAGDLkJiM/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=PJjU6o5bxDsarG_hgl6U6ZqOb8EM_L8DX3Lp5FhIVTQ%3D
+        workspaces:
+        - name: source-code
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+        taskRunSpecs:
+        - pipelineTaskName: build
+          taskServiceAccountName: builder
+          computeResources:
+            requests:
+              cpu: 1
+        - pipelineTaskName: notify
+          taskServiceAccountName: notifier
