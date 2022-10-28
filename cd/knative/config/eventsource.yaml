@@ -1,0 +1,23 @@
+apiVersion: sources.knative.dev/v1alpha1
+kind: GitHubSource
+metadata:
+  name: github-push
+  namespace: dogfood
+spec:
+  eventTypes:
+    - push
+  ownerAndRepository: lbernick/web-app-demo
+  accessToken:
+    secretKeyRef:
+      name: knative-githubsecret
+      key: accessToken
+  secretToken:
+    secretKeyRef:
+      name: knative-githubsecret
+      key: secretToken
+  sink:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: el-github-listener
+      namespace: dogfood

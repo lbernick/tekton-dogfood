@@ -1,0 +1,57 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+  namespace: dogfood
+spec:
+  triggers:
+    - name: github-listener
+      template:
+        ref: github-template
+  serviceAccountName: eventlistener-sa
+  resources:
+    kubernetesResource:
+      servicePort: 80
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-template
+  namespace: dogfood
+spec:
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: cd-run-
+      spec:
+        pipelineRef:
+          name: clone-build-push
+        params:
+        - name: repo-url
+          value: https://github.com/lbernick/web-app-demo
+        - name: image
+          value: us-east1-docker.pkg.dev/tekton-interns/leebernick/web-app-demo
+        workspaces:
+        - name: source-code
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+        taskRunSpecs:
+        - pipelineTaskName: build
+          taskServiceAccountName: builder
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: builder
+  namespace: dogfood
+  annotations:
+    # This service account uses GKE workload identity to map to a
+    # Google service account that has permissions to push to this
+    # Google Artifact Registry repo.
+    iam.gke.io/gcp-service-account: builder@tekton-interns.iam.gserviceaccount.com
