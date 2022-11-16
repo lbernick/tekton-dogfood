@@ -4,6 +4,6 @@ It's triggered when a change is pushed to the main branch of the repo.
 
 Contents:
 - vanilla_tekton: implementation using Tekton Triggers and Pipelines
-- workflows (TODO): implementation using Tekton workflows
 - flux: implementation using Flux CD
 - knative: implementation using knative eventing
+- pipelinesascode: implementation using RedHat Pipelines as Code

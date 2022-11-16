@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    pipelines-as-code/route: controller
+  name: pipelines-as-code
+  namespace: pipelines-as-code
+  annotations:
+    kubernetes.io/ingress.class: gce
+spec:
+  rules:
+  - host: lee.bernick.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: pipelines-as-code-controller
+            port:
+              number: 8080
+        path: /
+        pathType: Prefix
