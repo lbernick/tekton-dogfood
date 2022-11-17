@@ -1,15 +1,4 @@
 apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: unit-tests
-spec:
-  workspaces:
-  - name: source
-  steps:
-  - image: busybox
-    script: ls $(workspaces.source.path)
----
-apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: ci-pipeline
@@ -58,7 +47,8 @@ spec:
       value: $(params.revision)
   - name: unit-tests
     taskRef:
-      name: unit-tests
+      name: pytest
+      bundle: gcr.io/tekton-releases/catalog/upstream/pytest:0.1
     workspaces:
     - name: source
       workspace: source

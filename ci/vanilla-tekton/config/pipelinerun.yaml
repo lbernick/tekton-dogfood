@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: github-run-
+spec:
+  pipelineRef:
+    name: ci-pipeline
+  serviceAccountName: container-registry-sa
+  params:
+  - name: repo-full-name
+    value: lbernick/web-app-demo
+  - name: revision
+    value: 40018c2fdc953624606eed9989df41e1a63eeaac
+  - name: github-app-id
+    value: "229835"
+  - name: app-installation-id
+    value: "28405964"
+  workspaces:
+  - name: github-app-private-key
+    secret:
+      secretName: github-app-key
+  - name: source
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
