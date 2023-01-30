@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: ci-notifier-run-
+spec:
+  pipelineRef:
+    name: ci-pipeline
+  params:
+  - name: repo-name
+    value: web-app-demo
+  - name: repo-owner
+    value: lbernick
+  - name: revision
+    value: 40018c2fdc953624606eed9989df41e1a63eeaac
+  workspaces:
+  - name: source
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+  podTemplate:
+    securityContext:
+      fsGroup: 65532

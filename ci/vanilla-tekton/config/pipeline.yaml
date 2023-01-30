@@ -35,8 +35,12 @@ spec:
       workspace: github-app-private-key
   - name: clone
     taskRef:
-      name: git-clone
-      bundle: gcr.io/tekton-releases/catalog/upstream/git-clone:0.7
+      resolver: hub
+      params:
+      - name: name
+        value: git-clone
+      - name: version
+        value: "0.7"
     workspaces:
     - name: output
       workspace: source
@@ -47,8 +51,12 @@ spec:
       value: $(params.revision)
   - name: unit-tests
     taskRef:
-      name: pytest
-      bundle: gcr.io/tekton-releases/catalog/upstream/pytest:0.1
+      resolver: hub
+      params:
+      - name: name
+        value: pytest
+      - name: version
+        value: "0.1"
     workspaces:
     - name: source
       workspace: source
