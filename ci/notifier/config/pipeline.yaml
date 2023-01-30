@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ci-pipeline
+spec:
+  workspaces:
+  - name: source
+  params:
+  - name: repo-name
+  - name: repo-owner
+  - name: revision
+  tasks:
+  - name: clone
+    taskRef:
+      resolver: hub
+      params:
+      - name: name
+        value: git-clone
+      - name: version
+        value: "0.9"
+    workspaces:
+    - name: output
+      workspace: source
+    params:
+    - name: url
+      value: https://github.com/$(params.repo-owner)/$(params.repo-name)
+    - name: revision
+      value: $(params.revision)
+  - name: unit-tests
+    taskRef:
+      resolver: hub
+      params:
+      - name: name
+        value: pytest
+      - name: version
+        value: "0.1"
+    workspaces:
+    - name: source
+      workspace: source
+    runAfter:
+    - clone

@@ -1,0 +1,90 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+spec:
+  triggers:
+    - name: github-listener
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: github-secret
+                secretKey: secretToken
+            - name: "eventTypes"
+              value: ["pull_request"]
+        - name: "only when PRs are opened"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: "body.action in ['opened', 'synchronize', 'reopened']"
+      bindings:
+        - ref: github-ci-binding
+      template:
+        ref: ci-pipelinerun-template
+  resources:
+    kubernetesResource:
+      serviceType: LoadBalancer
+      spec:
+        template:
+          spec:
+            serviceAccountName: dogfood-sa
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: github-ci-binding
+spec:
+  params:
+    - name: revision
+      value: $(body.pull_request.head.sha)
+    - name: repo-name
+      value: $(body.repository.name)
+    - name: repo-owner
+      value: $(body.repository.owner.login)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: ci-pipelinerun-template
+spec:
+  params:
+    - name: repo-name
+    - name: repo-owner
+    - name: revision
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: ci-notifier-run-
+        annotations:
+          github.integrations.tekton.dev/installation: "28405964"
+          github.integrations.tekton.dev/commit: $(tt.params.revision)
+          github.integrations.tekton.dev/owner: $(tt.params.repo-owner)
+          github.integrations.tekton.dev/repo:  $(tt.params.repo-name)
+      spec:
+        pipelineRef:
+          name: ci-pipeline
+        params:
+        - name: repo-name
+          value: $(tt.params.repo-name)
+        - name: repo-owner
+          value: $(tt.params.repo-owner)
+        - name: revision
+          value: $(tt.params.revision)
+        workspaces:
+        - name: source
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+        podTemplate:
+          securityContext:
+            fsGroup: 65532
+          
