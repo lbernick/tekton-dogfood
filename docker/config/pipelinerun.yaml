@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: codelab
+  annotations:
+    # Replace me with your Google service account
+    # Has permissions to push to artifact registry
+    iam.gke.io/gcp-service-account: codelab@leebernick-test.iam.gserviceaccount.com
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: docker-build-run-
+spec:
+  pipelineRef:
+    name: docker-build-pipeline
+  params:
+  - name: image
+    value: us-east1-docker.pkg.dev/leebernick-test/codelab/web-app-demo
+  - name: registry
+    value: us-east1-docker.pkg.dev
+  workspaces:
+  - name: source-code
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+  serviceAccountNames:
+  - taskName: build
+    serviceAccountName: codelab # defined in serviceaccount.yaml
+  podTemplate:
+    securityContext:
+      fsGroup: 65532
