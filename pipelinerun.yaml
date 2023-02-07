@@ -1,0 +1,31 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: pipeline-release-
+spec:
+  serviceAccountName: release-right-meow
+  params:
+  - name: gitRevision
+    value: 9ec444ef404041693620f177f9be87116a81df52
+  - name: serviceAccountPath
+    value: release.json
+  - name: versionTag
+    value: v0.41.1
+  - name: releaseBucket
+    value: gs://tekton-releases/pipeline
+  - name: releaseAsLatest
+    value: "false"
+  pipelineRef:
+    name: pipeline-release
+  workspaces:
+  - name: release-secret
+    secret:
+      secretName: release-secret
+  - name: workarea
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

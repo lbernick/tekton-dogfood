@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: release-draft-
+spec:
+  params:
+  - name: package
+    value: "tektoncd/pipeline"
+  - name: git-revision
+    value: 9ec444ef404041693620f177f9be87116a81df52
+  - name: release-tag
+    value: v0.41.1
+  - name: previous-release-tag
+    value: v0.41.0
+  - name: release-name
+    value: "Nebelung Nomad"
+  - name: bucket
+    value: gs://tekton-releases/pipeline
+  - name: rekor-uuid
+    value: TODO
+  pipelineRef:
+    name: release-draft
+  workspaces:
+  - name: credentials
+    secret:
+      secretName: release-secret
+  - name: shared
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
