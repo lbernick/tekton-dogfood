@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: ci-pipeline
@@ -57,6 +57,36 @@ spec:
         value: pytest
       - name: version
         value: "0.1"
+    params:
+    - name: SOURCE_PATH
+      value: ./src
+    workspaces:
+    - name: source
+      workspace: source
+    runAfter:
+    - clone
+  - name: lint
+    taskRef:
+      resolver: hub
+      params:
+      - name: name
+        value: black
+      - name: version
+        value: "0.2"
+    params:
+    - name: image
+      value: docker.io/cytopia/black:latest-py3.7-manifest-linux-amd64@sha256:c15279695a5d7a5114a3b3b613a98ec745e875b07ed39860a7c5bcb8bb6053b8
+    workspaces:
+    - name: shared-workspace
+      workspace: source
+    runAfter:
+    - clone
+  - name: integration-tests
+    taskRef:
+      name: integration-tests
+    params:
+    - name: SOURCE_PATH
+      value: ./test
     workspaces:
     - name: source
       workspace: source
