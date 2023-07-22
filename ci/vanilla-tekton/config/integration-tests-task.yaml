@@ -1,0 +1,80 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: integration-tests
+spec:
+  params:
+  - name: ARGS
+    description: The additional arguments to be used with pytest
+    type: string
+    default: ""
+  - name: SOURCE_PATH
+    description: The path to the source code
+    default: "."
+  - name: REQUIREMENTS_FILE
+    description: The name of the requirements file inside the source location, with fallback to the requirements file in the root location
+    default: "requirements.txt"
+  - name: PIP_CONF_FILE
+    description: The name of the custom pip config file.
+    default: "pip.conf"
+  workspaces:
+  - name: source
+  steps:
+  - image: python:3.11.1-bullseye
+    workingDir: $(workspaces.source.path)
+    script: |
+      export PATH=$PATH:$HOME/.local/bin
+
+      if [ "${WORKSPACE_PIP_CONF_BOUND}" = "true" ] ; then
+        export PIP_CONFIG_FILE="${WORKSPACE_PIP_CONF_PATH}/${PARAM_PIP_CONF_FILE}"
+      fi
+
+      if [ -e "$(params.SOURCE_PATH)"/"$(params.REQUIREMENTS_FILE)" ];
+      then
+        pip install -r "$(params.SOURCE_PATH)"/"$(params.REQUIREMENTS_FILE)"
+        pip show pytest || {
+          printf "###\nWarning: Pytest is missing in your test requirements file\n###";
+          pip install pytest
+        }
+      else
+        if [ -e "$(params.REQUIREMENTS_FILE)" ];
+        then
+          pip install -r "$(params.REQUIREMENTS_FILE)"
+        fi
+        pip install pytest
+      fi
+      if [ -z "$(params.ARGS)" ]; then
+        pytest "$(params.SOURCE_PATH)"
+      else
+        pytest "$(params.ARGS)" "$(params.SOURCE_PATH)"
+      fi
+  sidecars:
+  - name: app
+    workingDir: $(workspaces.source.path)
+    image: python:3.11.1-bullseye
+    script: |
+      export PATH=$PATH:$HOME/.local/bin
+
+      if [ "${WORKSPACE_PIP_CONF_BOUND}" = "true" ] ; then
+        export PIP_CONFIG_FILE="${WORKSPACE_PIP_CONF_PATH}/${PARAM_PIP_CONF_FILE}"
+      fi
+
+      if [ -e "$(params.SOURCE_PATH)"/"$(params.REQUIREMENTS_FILE)" ];
+      then
+        pip install -r "$(params.SOURCE_PATH)"/"$(params.REQUIREMENTS_FILE)"
+        pip show flask || {
+          printf "###\nWarning: flask is missing in your test requirements file\n###";
+          pip install flask
+        }
+      else
+        if [ -e "$(params.REQUIREMENTS_FILE)" ];
+        then
+          pip install -r "$(params.REQUIREMENTS_FILE)"
+        fi
+        pip install flask
+      fi
+      flask run
+    env:
+    - name: FLASK_APP
+      value: src.main
+  - image: redis
