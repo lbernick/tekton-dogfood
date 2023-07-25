@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: clone-docker-build-push-run-
+spec:
+  pipelineRef:
+    name: clone-docker-build-push
+  params:
+  - name: repo-url
+    value: https://github.com/lbernick/web-app-demo
+  - name: image
+    value: us-east1-docker.pkg.dev/leebernick-test/codelab/web-app-demo
+  - name: registry
+    value: us-east1-docker.pkg.dev
+  workspaces:
+  - name: source-code
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
