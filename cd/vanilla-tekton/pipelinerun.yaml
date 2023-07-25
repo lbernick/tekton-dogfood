@@ -1,10 +1,10 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   generateName: clone-build-push-run-
 spec:
   pipelineRef:
-    name: clone-build-push
+    name: clone-kaniko-build-push
   params:
   - name: repo-url
     value: https://github.com/lbernick/web-app-demo
@@ -23,9 +23,9 @@ spec:
             storage: 1Gi
   taskRunSpecs:
   - pipelineTaskName: build
-    taskServiceAccountName: builder
+    serviceAccountName: builder
     computeResources:
       requests:
         cpu: 1
   - pipelineTaskName: notify
-    taskServiceAccountName: notifier
+    serviceAccountName: notifier

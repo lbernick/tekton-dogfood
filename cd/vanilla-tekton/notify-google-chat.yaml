@@ -1,0 +1,20 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: notify-google-chat
+spec:
+  params:
+  - name: webhook-url
+  - name: message
+  steps:
+  - name: notify
+    image: curlimages/curl
+    command:
+    - sh
+    args:
+    - -ce
+    - |
+      set -ex
+      BODY="{\"text\":\"$(params.message)\"}"
+      echo "Posting message to Google Chat"
+      curl -i -H "Content-Type: application/json; charset=UTF-8" "$(params.webhook-url)" -d '{"text":"$(params.message)"}'

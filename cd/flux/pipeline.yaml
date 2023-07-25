@@ -23,7 +23,7 @@ spec:
       "--digest-file=$(results.digest.path)",
     ]
 ---
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: notify-google-chat
@@ -45,7 +45,7 @@ spec:
       echo "Posting message to Google Chat"
       curl -i -H "Content-Type: application/json; charset=UTF-8" "$(params.webhook-url)" -d '{"text":"$(params.message)"}'
 ---
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: clone-build-push

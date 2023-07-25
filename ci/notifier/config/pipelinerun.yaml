@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   generateName: ci-notifier-run-
@@ -21,6 +21,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  podTemplate:
-    securityContext:
-      fsGroup: 65532
+  taskRunTemplate:
+    podTemplate:
+      securityContext:
+        fsGroup: 65532
