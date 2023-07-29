@@ -11,7 +11,7 @@ spec:
   params:
   - name: image
   - name: repo-url
-  - name: chat-webhook-url
+  # - name: chat-webhook-url
   results:
   - name: image-digest
     value: $(tasks.build.results.digest)
@@ -42,12 +42,12 @@ spec:
     - name: source-code
     runAfter:
     - fetch-source
-  finally:
-  - name: notify
-    taskRef:
-      name: notify-google-chat
-    params:
-    - name: webhook-url
-      value: $(params.chat-webhook-url)
-    - name: message
-      value: "Build status: $(tasks.build.status)"
+  # finally:
+  # - name: notify
+  #   taskRef:
+  #     name: notify-google-chat
+  #   params:
+  #   - name: webhook-url
+  #     value: $(params.chat-webhook-url)
+  #   - name: message
+  #     value: "Build status: $(tasks.build.status)"

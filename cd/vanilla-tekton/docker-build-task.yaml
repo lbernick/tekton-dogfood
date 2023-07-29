@@ -46,6 +46,9 @@ spec:
   - name: IMAGE_DIGEST
     description: Digest of the image just built.
   steps:
+  - name: check-auth
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk
+    args: ["gcloud", "auth", "list"]
   - name: docker-build
     image: $(params.builder_image)
     env:
@@ -69,6 +72,7 @@ spec:
         name: dind-certs
   - name: docker-push
     image: us-east1-docker.pkg.dev/leebernick-test/codelab/docker-curl-tar:latest
+    # image: $(params.builder_image)
     env:
     # Connect to the sidecar over TCP, with TLS.
     - name: DOCKER_HOST
@@ -88,6 +92,7 @@ spec:
       docker-credential-gcr configure-docker --registries=$(params.registry)
       echo "https://$(params.registry)" | docker-credential-gcr get
       docker push $(params.push_extra_args) $(params.image)
+    # script: docker push $(params.push_extra_args) $(params.image)
     volumeMounts:
       - mountPath: /certs/client
         name: dind-certs

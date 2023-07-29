@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: clone-build-push-run-
+  generateName: clone-kaniko-build-push-run-
 spec:
   pipelineRef:
     name: clone-kaniko-build-push
@@ -9,9 +9,9 @@ spec:
   - name: repo-url
     value: https://github.com/lbernick/web-app-demo
   - name: image
-    value: us-east1-docker.pkg.dev/tekton-interns/leebernick/web-app-demo
-  - name: chat-webhook-url
-    value: https://chat.googleapis.com/v1/spaces/AAAAGDLkJiM/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=PJjU6o5bxDsarG_hgl6U6ZqOb8EM_L8DX3Lp5FhIVTQ%3D
+    value: us-east1-docker.pkg.dev/leebernick-test/codelab/web-app-demo
+  # - name: chat-webhook-url
+  #   value: https://chat.googleapis.com/v1/spaces/AAAAGDLkJiM/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=PJjU6o5bxDsarG_hgl6U6ZqOb8EM_L8DX3Lp5FhIVTQ%3D
   workspaces:
   - name: source-code
     volumeClaimTemplate:
@@ -24,8 +24,8 @@ spec:
   taskRunSpecs:
   - pipelineTaskName: build
     serviceAccountName: builder
-    computeResources:
-      requests:
-        cpu: 1
-  - pipelineTaskName: notify
-    serviceAccountName: notifier
+  #   computeResources:
+  #     requests:
+  #       cpu: 1
+  # - pipelineTaskName: notify
+  #   serviceAccountName: notifier
